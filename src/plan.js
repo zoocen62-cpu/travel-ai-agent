@@ -3,7 +3,6 @@ import { runAgent } from './agent.js';
 import { parseConfirmedHours } from './validation.js';
 import { openPlan, sealPlan } from './plan-session.js';
 
-const regions = ['제주', '부산', '강릉', '경주', '전주'];
 const interests = ['맛집', '관광', '자연', '휴식', '쇼핑'];
 const transports = ['자동차', '대중교통', '도보'];
 
@@ -81,7 +80,8 @@ function validDate(value) {
 }
 
 function validTrip(trip) {
-  return trip && regions.includes(trip.region) && validDate(trip.departure) &&
+  return trip && typeof trip.region === 'string' && trip.region.length <= 80 &&
+    /^[가-힣a-zA-Z0-9·. -]+$/.test(trip.region.trim()) && validDate(trip.departure) &&
     validInteger(trip.days, 1, 14) && validInteger(trip.people, 1, 50) &&
     validInteger(trip.budget, 1, 100000000) && transports.includes(trip.transport) &&
     Array.isArray(trip.interests) && trip.interests.length <= interests.length &&
@@ -119,7 +119,7 @@ export async function generatePlan(request, response) {
     error: '확인한 영업시간은 일차 | 장소명 | HH:MM-HH:MM 형식으로 입력해 주세요.',
   });
   return sendPlan({
-    region, departure, days, people, budget, transport, interests: preferences, notes, maxStopsPerDay, maxTransferMinutes,
+    region: region.trim().replace(/\s+/g, ' '), departure, days, people, budget, transport, interests: preferences, notes, maxStopsPerDay, maxTransferMinutes,
     confirmedHours,
   }, response);
 }

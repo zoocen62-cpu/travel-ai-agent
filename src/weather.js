@@ -1,3 +1,5 @@
+import { findWeatherGrid } from './weather-grid.js';
+
 const endpoint = 'https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst';
 const source = { name: '기상청 단기예보', url: 'https://www.data.go.kr/data/15084084/openapi.do' };
 const grids = new Map([
@@ -39,12 +41,13 @@ export function weatherDates(date, days = 1, now = new Date()) {
 
 export async function get_weather(region, date, days = 1, now = new Date()) {
   const forecasts = weatherDates(date, days, now);
-  const grid = grids.get(region);
-  if (!grid) throw new TypeError('지원하는 여행 지역을 선택해 주세요.');
   if (forecasts.every(day => day.reason === 'outside_window')) return forecasts;
 
   const key = process.env.WEATHER_API_KEY?.trim() || process.env.KMA_SERVICE_KEY?.trim();
   if (!key) return forecasts.map(day => day.reason === 'outside_window' ? day : { ...day, reason: 'missing_key' });
+
+  const grid = grids.get(region) ?? await findWeatherGrid(region);
+  if (!grid) return forecasts.map(day => day.reason === 'outside_window' ? day : { ...day, reason: 'unknown_region' });
 
   const { issueDate, issueHour } = forecastWindow(now);
   const [nx, ny] = grid;

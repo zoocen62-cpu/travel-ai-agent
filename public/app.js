@@ -43,7 +43,7 @@ function won(amount) {
 }
 
 function createPlan(values) {
-  const region = values.get('region');
+  const region = values.get('region').trim().replace(/\s+/g, ' ');
   const preferences = values.getAll('interests');
   const preferred = preferences.length ? preferences : categories;
   const firstDate = new Date(values.get('departure') + 'T00:00:00Z');
@@ -68,7 +68,7 @@ function createPlan(values) {
   });
 
   function makeStop(category, index) {
-    return { category, name: destinations[region][categories.indexOf(category)], time: times[index] };
+    return { category, name: destinations[region]?.[categories.indexOf(category)] ?? region + ' ' + category, time: times[index] };
   }
 
   return {
@@ -162,6 +162,7 @@ function showDay(day, selectedButton, generated, plan) {
     const reasons = {
       outside_window: '기상청 단기예보 범위 밖', not_requested: '이번 일정에서 예보 조회 생략',
       missing_key: '기상청 서비스 키 미설정', api_error: '기상청 예보 조회 실패', no_data: '해당 시간대 예보 없음',
+      unknown_region: '예보 격자에 연결할 지역 좌표 미확인',
     };
     const summary = forecast.status === 'forecast'
       ? (forecast.rainExpected ? '비 가능성 있음' : '주간 비 신호 없음') +
@@ -486,7 +487,11 @@ placesForm.addEventListener('submit', async event => {
     return;
   }
 
-  const region = form.elements.namedItem('region').value;
+  const region = form.elements.namedItem('region').value.trim().replace(/\s+/g, ' ');
+  if (!region) {
+    placesError.textContent = '여행 지역을 입력해 주세요.';
+    return;
+  }
   const query = new URLSearchParams({ region, keyword });
   placesButton.disabled = true;
   placesList.replaceChildren();
@@ -540,6 +545,11 @@ form.addEventListener('submit', async event => {
   const values = new FormData(form);
   const plan = createPlan(values);
   const { region, people, budget, transport, preferences, notes } = plan;
+  if (!region) {
+    requestError.textContent = '여행 지역을 입력해 주세요.';
+    form.elements.namedItem('region').focus();
+    return;
+  }
   generating = true;
   syncChat();
   submitButton.textContent = '일정 만드는 중…';
