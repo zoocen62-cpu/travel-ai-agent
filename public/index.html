@@ -1,0 +1,163 @@
+﻿<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>가뿐 — 국내 여행 플래너</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a class="brand" href="/">가뿐<span> 국내 여행 플래너</span></a>
+      <a class="header-link" href="#results">여행 계획 보기</a>
+    </div>
+  </header>
+  <main class="wrap">
+    <section class="hero" aria-labelledby="hero-title">
+      <div>
+        <p class="eyebrow">AI 국내 여행 플래너</p>
+        <h1 id="hero-title">가볍게 떠나는<br>나만의 국내 여행.</h1>
+        <p>어디로 갈지, 무엇을 좋아하는지 알려주세요.<br>일정부터 이동 동선과 예산까지 한곳에서 살펴볼 수 있어요.</p>
+      </div>
+      <div class="hero-route" aria-hidden="true"><span>출발</span><span>도착</span></div>
+    </section>
+    <div class="workspace">
+      <section class="card planner" aria-labelledby="form-title">
+        <h2 id="form-title">여행 조건</h2>
+        <form id="trip-form">
+          <label>여행 지역
+            <select name="region">
+              <option>제주</option><option>부산</option><option>강릉</option><option>경주</option><option>전주</option>
+            </select>
+          </label>
+          <div class="fields">
+            <label>출발일<input type="date" name="departure" required></label>
+            <label>여행 기간 (일)<input type="number" name="days" value="3" min="1" max="14" required></label>
+            <label>여행 인원 (명)<input type="number" name="people" value="2" min="1" max="50" required></label>
+            <label>총예산 (원)<input type="number" name="budget" value="600000" min="1" max="100000000" step="1" required></label>
+          </div>
+          <fieldset>
+            <legend>여행 취향</legend>
+            <div class="choices">
+              <label><input type="checkbox" name="interests" value="맛집" checked><span>맛집</span></label>
+              <label><input type="checkbox" name="interests" value="관광"><span>관광</span></label>
+              <label><input type="checkbox" name="interests" value="자연" checked><span>자연</span></label>
+              <label><input type="checkbox" name="interests" value="휴식"><span>휴식</span></label>
+              <label><input type="checkbox" name="interests" value="쇼핑"><span>쇼핑</span></label>
+            </div>
+          </fieldset>
+          <label>이동수단
+            <select name="transport"><option>자동차</option><option>대중교통</option><option>도보</option></select>
+          </label>
+          <div class="fields">
+            <label>하루 최대 방문지
+              <input type="number" name="maxStopsPerDay" min="1" max="3" value="3" required>
+            </label>
+            <label>구간당 자동차 이동 한도 (분)
+              <input type="number" name="maxTransferMinutes" min="1" max="600" placeholder="선택">
+            </label>
+          </div>
+          <label>추가 요청 <small>선택</small>
+            <textarea name="notes" rows="3" maxlength="500" placeholder="예: 첫날은 오후에 도착해요."></textarea>
+          </label>
+          <details>
+            <summary>확인한 영업시간 입력 <small>선택</small></summary>
+            <label>일차 | 장소명 | 영업시간
+              <textarea name="confirmedHours" rows="2" maxlength="1500" placeholder="1 | 부산시립미술관 | 10:00-18:00"></textarea>
+            </label>
+            <small>확인한 시간대만 한 줄씩 입력해 주세요. 휴식 시간이 있으면 오전과 오후를 별도 줄로 입력하세요.</small>
+          </details>
+          <button class="primary" type="submit">AI 여행 계획 만들기</button>
+        </form>
+        <p id="request-status" role="status"></p>
+        <p id="request-error" role="alert"></p>
+      </section>
+      <section id="results" aria-labelledby="result-title">
+        <div class="result-heading">
+          <div><p class="eyebrow" id="result-kind">샘플 여행 계획</p><h2 id="result-title" tabindex="-1"></h2></div>
+          <p id="trip-summary"></p>
+        </div>
+        <div class="card itinerary">
+          <h3>날짜별 일정</h3>
+          <div id="days" class="day-list" role="tablist" aria-label="여행 날짜"></div>
+          <div id="day-detail" role="tabpanel" tabindex="0"></div>
+        </div>
+        <div class="result-grid">
+          <section class="card map-card" aria-labelledby="map-title">
+            <h3 id="map-title">지도</h3>
+            <p>선택한 날짜의 방문 순서</p>
+            <div id="map" class="map" aria-hidden="true"></div>
+            <div id="live-map" class="map live-map" aria-label="확인된 장소와 자동차 경로" role="region" hidden></div>
+            <ol id="map-key" class="map-key"></ol>
+            <small id="map-status" role="status"></small>
+          </section>
+          <section class="card budget-card" aria-labelledby="budget-title">
+            <h3 id="budget-title">예산</h3>
+            <p id="budget-caption" class="stop-description">입력 예산 기준 예시 배분</p>
+            <p id="budget-total" class="budget-total"></p>
+            <p id="per-person"></p>
+            <table class="budget-table" aria-label="항목별 예상 비용과 잔여 예산">
+              <thead><tr><th scope="col">항목</th><th scope="col">금액</th></tr></thead>
+              <tbody id="budget-items"></tbody>
+              <tfoot><tr><th id="budget-remaining-label" scope="row">잔여 예산</th><td id="budget-remaining"></td></tr></tfoot>
+            </table>
+          </section>
+        </div>
+        <section class="card" aria-labelledby="places-title">
+          <h3 id="places-title">장소 검색</h3>
+          <p class="stop-description">선택한 여행 지역에서 NAVER API HUB로 검색합니다.</p>
+          <form id="places-form">
+            <label>검색어
+              <input type="search" name="keyword" required maxlength="100" placeholder="예: 관광지, 해산물 맛집, 카페">
+            </label>
+            <button class="primary" type="submit">장소 검색</button>
+          </form>
+          <p id="places-status" class="stop-description" role="status"></p>
+          <p id="places-error" role="alert"></p>
+          <ul id="places-list" class="places-list"></ul>
+          <div class="route-picker">
+            <h4>자동차 경로</h4>
+            <p id="route-points" class="stop-description">검색 결과에서 출발지와 도착지를 지정해 주세요.</p>
+            <button id="route-button" type="button" disabled>자동차 거리·시간 조회</button>
+            <p id="route-status" class="stop-description" role="status"></p>
+          </div>
+        </section>
+        <section class="card" id="web-sources" aria-labelledby="web-sources-title" hidden>
+          <h3 id="web-sources-title">웹 검색 출처</h3>
+          <ul id="web-sources-list" class="map-key"></ul>
+        </section>
+        <section class="card" id="plan-validation" aria-labelledby="validation-title" hidden>
+          <h3 id="validation-title">일정 검증과 자동 수정</h3>
+          <p id="validation-summary" class="stop-description"></p>
+          <ul id="validation-issues" class="validation-list"></ul>
+          <div id="validation-revisions"></div>
+        </section>
+        <section class="card" id="plan-chat" aria-labelledby="chat-title" hidden>
+          <h3 id="chat-title">대화로 일정 수정</h3>
+          <p class="stop-description">바꾸고 싶은 날짜나 장소를 알려주세요.</p>
+          <ol id="chat-messages" class="chat-messages" aria-label="일정 수정 대화" aria-live="polite"></ol>
+          <form id="chat-form">
+            <label>일정 변경 요청
+              <textarea name="message" rows="2" maxlength="1000" required placeholder="예: 둘째 날 오후를 실내 전시 관람으로 바꿔 줘."></textarea>
+            </label>
+            <div class="chat-actions">
+              <button class="primary" type="submit">수정 요청</button>
+              <button id="undo-edit" type="button" disabled>직전 수정 되돌리기</button>
+            </div>
+          </form>
+          <p id="chat-status" class="stop-description" role="status"></p>
+          <p id="chat-error" role="alert"></p>
+        </section>
+        <section class="card log-card" aria-labelledby="log-title">
+          <h3 id="log-title">Agent 실행 기록</h3>
+          <ol id="agent-log"></ol>
+        </section>
+        <p id="result-status" class="sr-only" role="status"></p>
+      </section>
+    </div>
+  </main>
+  <footer class="wrap">가뿐 · 국내 여행 플래너</footer>
+</body>
+</html>
