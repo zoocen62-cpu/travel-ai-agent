@@ -316,7 +316,9 @@ const koreaDate = new Intl.DateTimeFormat('en-CA', {
 });
 const dateParts = Object.fromEntries(koreaDate.formatToParts(new Date()).map(({ type, value }) => [type, value]));
 departure.value = [dateParts.year, dateParts.month, dateParts.day].join('-');
-renderPlan(createPlan(new FormData(form)));
+const sampleValues = new FormData(form);
+sampleValues.set('region', '제주');
+renderPlan(createPlan(sampleValues));
 
 const submitButton = form.querySelector('button[type="submit"]');
 const requestStatus = document.querySelector('#request-status');
